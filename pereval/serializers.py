@@ -29,6 +29,12 @@ class ImageSerializer(WritableNestedModelSerializer):
 
 
 class PerevalSerializer(WritableNestedModelSerializer):
+    user = UserSerializer()
+    coords = CoordsSerializer()
+    level = LevelSerializer()
+    images = ImageSerializer(many=True)
+    status = serializers.CharField(read_only=True)
+
     class Meta:
         model = Pereval
         fields = [
@@ -36,8 +42,19 @@ class PerevalSerializer(WritableNestedModelSerializer):
             'add_time', 'user', 'coords', 'level', 'status', 'images'
         ]
 
+    def create(self, validated_data):
+        user_data = validated_data.pop('user')
+        coords_data = validated_data.pop('coords')
+        level_data = validated_data.pop('level')
+        images_data = validated_data.pop('images')
 
+        user, _ = User.objects.get_or_create(**user_data)
+        coords = Coords.objects.create(**coords_data)
+        level = Level.objects.create(**level_data)
 
+        pereval = Pereval.objects.create(user=user, coords=coords, level=level, **validated_data)
 
+        for image_data in images_data:
+            Image.objects.create(pereval=pereval, **image_data)
 
-
+        return pereval
