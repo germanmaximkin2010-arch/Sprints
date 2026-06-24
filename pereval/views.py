@@ -60,6 +60,30 @@ class PerevalViewSet(ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
+    def partial_update(self, request, *args, **kwargs):
+        pereval_obj = self.get_object()
+        pereval_data = request.data.copy()
+        serializer = self.get_serializer(pereval_obj, data=pereval_data, partial=True)
+
+        if pereval_obj.status != "new":
+            return Response(
+                {
+                    "state": 0,
+                    "message": "Можно изменять запись только в статусе 'new'"
+                },
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        if serializer.is_valid():
+            serializer.save()
+        return Response(
+            {
+                "state": 1,
+                "message": "Запись успешно обновлена"
+            },
+            status=status.HTTP_200_OK
+        )
+
 
 class ImageViewSet(ModelViewSet):
     queryset = Image.objects.all()
