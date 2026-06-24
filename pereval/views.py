@@ -1,4 +1,5 @@
 from django.db import DatabaseError
+from django.forms import model_to_dict
 
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.response import Response
@@ -30,6 +31,7 @@ class PerevalViewSet(ModelViewSet):
     queryset = Pereval.objects.all()
     serializer_class = PerevalSerializer
     http_method_names = ['get', 'post', 'patch']
+    filterset_fields = ['user__email']
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
