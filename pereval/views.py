@@ -1,4 +1,5 @@
 from django.db import DatabaseError
+from django.forms import model_to_dict
 
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.response import Response
@@ -30,6 +31,7 @@ class PerevalViewSet(ModelViewSet):
     queryset = Pereval.objects.all()
     serializer_class = PerevalSerializer
     http_method_names = ['get', 'post', 'patch']
+    filterset_fields = ['user__email']
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -57,6 +59,43 @@ class PerevalViewSet(ModelViewSet):
                  },
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+    def partial_update(self, request, *args, **kwargs):
+        pereval_obj = self.get_object()
+        pereval_data = request.data.copy()
+        serializer = self.get_serializer(pereval_obj, data=pereval_data, partial=True)
+
+        if pereval_obj.status != "new":
+            return Response(
+                {
+                    "state": 0,
+                    "message": "Можно изменять запись только в статусе 'new'"
+                },
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        user_data = pereval_data.get("user")
+        user_dict = model_to_dict(pereval_obj.user)
+        user_dict.pop('id')
+
+        if user_data and user_data != user_dict:
+            return Response(
+                {
+                    "state": 0,
+                    "message": "Нельзя менять данные пользователя"
+                },
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        if serializer.is_valid():
+            serializer.save()
+        return Response(
+            {
+                "state": 1,
+                "message": "Запись успешно обновлена"
+            },
+            status=status.HTTP_200_OK
+        )
 
 
 class ImageViewSet(ModelViewSet):
